@@ -1,4 +1,4 @@
-# kdp_ai_tool_ui.py (updated for OpenAI v1.x)
+# kdp_ai_tool_ui.py (updated for OpenAI v1.x and Unicode-safe PDF)
 
 import streamlit as st
 import openai
@@ -56,15 +56,21 @@ if st.button("🚀 Generate Book"):
                         messages=[{"role": "user", "content": f"{custom_prompt} (Page {i+1})"}]
                     )
                     text = response.choices[0].message.content.strip()
-                    pages.append(f"Page {i+1}:\n{text}\n")
+                    pages.append(f"Page {i+1}:
+{text}
+")
                 except Exception as e:
-                    pages.append(f"Page {i+1}: [Error] {str(e)}\n")
+                    pages.append(f"Page {i+1}: [Error] {str(e)}
+")
 
         # --- Generate PDF ---
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
+
+        # Use a Unicode font to avoid encoding issues
+        pdf.add_font("DejaVu", "", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", uni=True)
+        pdf.set_font("DejaVu", size=12)
 
         for page in pages:
             pdf.multi_cell(0, 10, page)
