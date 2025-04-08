@@ -11,7 +11,7 @@ st.title("📘 KDP AI Book Creator")
 
 # --- Sidebar Settings ---
 st.sidebar.header("🔐 API Key Setup")
-api_key = st.sidebar.text_input("Enter your OpenAI API keysk-proj-GGje_Yad2nydwZBj25Qm09dDakzVQpVNCbEl7XbsZpOP0DbnMouSW63S37iHrNGBcgWgO8CWYUT3BlbkFJacwJg96NqYiUA4i0gKHYi7TcANVI5cLBizbo2PMtZLf4P_Hl7F4SoctTBzuQgx-SKnMdPEZlsA", type="password")
+api_key = st.sidebar.text_input("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", type="password")
 
 # --- Book Type Dropdown ---
 st.sidebar.header("📚 Book Settings")
