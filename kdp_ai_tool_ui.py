@@ -1,9 +1,8 @@
-# kdp_ai_tool_ui.py
+# kdp_ai_tool_ui.py (updated for OpenAI v1.x)
 
 import streamlit as st
 import openai
 from fpdf import FPDF
-import os
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="KDP AI Book Creator", layout="centered")
@@ -11,7 +10,7 @@ st.title("📘 KDP AI Book Creator")
 
 # --- Sidebar Settings ---
 st.sidebar.header("🔐 API Key Setup")
-api_key = st.sidebar.text_input("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", type="password")
+api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
 
 # --- Book Type Dropdown ---
 st.sidebar.header("📚 Book Settings")
@@ -46,17 +45,17 @@ if st.button("🚀 Generate Book"):
     if not api_key:
         st.warning("Please enter your OpenAI API key in the sidebar.")
     else:
-        openai.api_key = api_key
+        client = openai.OpenAI(api_key=api_key)
 
         pages = []
         with st.spinner("Generating content using GPT-4o..."):
             for i in range(num_pages):
                 try:
-                    response = openai.ChatCompletion.create(
+                    response = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[{"role": "user", "content": f"{custom_prompt} (Page {i+1})"}]
                     )
-                    text = response["choices"][0]["message"]["content"].strip()
+                    text = response.choices[0].message.content.strip()
                     pages.append(f"Page {i+1}:\n{text}\n")
                 except Exception as e:
                     pages.append(f"Page {i+1}: [Error] {str(e)}\n")
