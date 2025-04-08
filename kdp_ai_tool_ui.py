@@ -1,4 +1,4 @@
-# kdp_ai_tool_ui.py (now with DALL·E image support for coloring books)
+# kdp_ai_tool_ui.py (fix font style error for PDF)
 
 import streamlit as st
 import openai
@@ -91,11 +91,10 @@ if st.button("🚀 Generate Book"):
         pdf.set_font("DejaVu", size=12)
 
         for i, (title, content) in enumerate(pages):
-            pdf.set_font("DejaVu", style="B", size=12)
+            pdf.set_font("DejaVu", size=12)
             pdf.multi_cell(0, 10, title)
-            pdf.set_font("DejaVu", style="", size=12)
+            pdf.set_font("DejaVu", size=12)
             if book_type == "Coloring Book" and i < len(images):
-                # Save image temporarily
                 image_path = f"temp_image_{i}.png"
                 images[i].save(image_path)
                 pdf.image(image_path, x=10, y=None, w=180)
