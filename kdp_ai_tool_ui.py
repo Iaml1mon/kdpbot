@@ -1,4 +1,4 @@
-# kdp_ai_tool_ui.py (Improved tool with SD connection check)
+# kdp_ai_tool_ui.py (Improved tool with SD connection check and full img2img integration)
 
 import streamlit as st
 import openai
@@ -9,6 +9,8 @@ from io import BytesIO
 import os
 import base64
 import pandas as pd
+from datetime import datetime
+import time
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="KDP AI Book Creator", layout="centered")
@@ -36,7 +38,7 @@ use_local_sd = st.sidebar.checkbox("🖥️ Use Local Stable Diffusion (for page
 # --- Check Local SD Availability ---
 def check_sd_connection():
     try:
-        r = requests.get("http://127.0.0.1:7860/sdapi/v1/sd-models", timeout=5)
+        r = requests.get("http://127.0.0.1:7861/sdapi/v1/sd-models", timeout=5)
         if r.status_code == 200:
             return True
     except:
@@ -77,28 +79,32 @@ metadata_records = []
 
 # Local SD generator
 
+def encode_image_to_base64(image):
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
+
+def decode_base64_to_image(base64_str):
+    return Image.open(BytesIO(base64.b64decode(base64_str)))
+
 def generate_with_local_sd(image, prompt):
     try:
-        api_url = "http://127.0.0.1:7861/sdapi/v1/img2img"
-        buffered = BytesIO()
-        image.save(buffered, format="PNG")
-        b64_img = base64.b64encode(buffered.getvalue()).decode()
-
         payload = {
-            "init_images": [b64_img],
             "prompt": prompt,
-            "sampler_name": "Euler a",
-            "cfg_scale": 7,
+            "seed": 42,
             "steps": 30,
-            "denoising_strength": 0.6,
             "width": 512,
-            "height": 512
+            "height": 512,
+            "cfg_scale": 7,
+            "sampler_name": "Euler a",
+            "denoising_strength": 0.6,
+            "n_iter": 1,
+            "init_images": [encode_image_to_base64(image)],
+            "batch_size": 1
         }
-
-        response = requests.post(api_url, json=payload).json()
-        result_b64 = response["images"][0]
-        result_bytes = BytesIO(base64.b64decode(result_b64))
-        return Image.open(result_bytes)
+        response = requests.post("http://127.0.0.1:7861/sdapi/v1/img2img", json=payload)
+        result = response.json()
+        return decode_base64_to_image(result['images'][0])
     except Exception as e:
         st.error(f"Local SD failed: {e}")
         return image
