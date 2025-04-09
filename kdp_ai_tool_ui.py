@@ -1,4 +1,4 @@
-# kdp_ai_tool_ui.py (DALL·E 3 covers + local SD fantasy-style image generation)
+# kdp_ai_tool_ui.py (Improved tool: editable pages, preview, export, metadata)
 
 import streamlit as st
 import openai
@@ -8,6 +8,7 @@ from PIL import Image
 from io import BytesIO
 import os
 import base64
+import pandas as pd
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="KDP AI Book Creator", layout="centered")
@@ -54,6 +55,12 @@ if book_type == "Coloring Book":
     st.markdown("### 📥 Upload Coloring Pages (Optional)")
     uploaded_images = st.file_uploader("Upload coloring page images to convert to fantasy style", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
 
+# Allow preview editing
+editable_pages = []
+metadata_records = []
+
+# Local SD generator
+
 def generate_with_local_sd(image, prompt):
     try:
         api_url = "http://127.0.0.1:7861/sdapi/v1/img2img"
@@ -80,6 +87,7 @@ def generate_with_local_sd(image, prompt):
         st.error(f"Local SD failed: {e}")
         return image
 
+# Generate book content
 if st.button("🚀 Generate Book"):
     if not api_key:
         st.warning("Please enter your OpenAI API key in the sidebar.")
@@ -91,33 +99,35 @@ if st.button("🚀 Generate Book"):
         with st.spinner("Generating content using GPT-4o and DALL·E / Local SD..."):
             for i in range(num_pages):
                 try:
+                    title = f"Page {i+1}"
+                    prompt = f"{custom_prompt} (Page {i+1})"
                     if book_type == "Coloring Book" and i < len(uploaded_images):
                         uploaded_file = uploaded_images[i]
                         original_img = Image.open(uploaded_file).convert("RGB")
-                        prompt = f"{custom_prompt}, fantasy unicorn, soft pastel tones, cinematic lighting"
-
                         if use_local_sd:
-                            image = generate_with_local_sd(original_img, prompt)
+                            image = generate_with_local_sd(original_img, custom_prompt)
                         else:
                             image_response = client.images.generate(
                                 model="dall-e-3",
-                                prompt=prompt,
+                                prompt=custom_prompt,
                                 size="1024x1024",
                                 quality="standard",
                                 n=1
                             )
                             image_url = image_response.data[0].url
                             image = Image.open(BytesIO(requests.get(image_url).content))
-
+                        pages.append((title, prompt))
                         images.append(image)
-                        pages.append((f"Page {i+1}", prompt))
+                        metadata_records.append({"Title": title, "Prompt": prompt, "Type": book_type})
                     else:
                         response = client.chat.completions.create(
                             model="gpt-4o",
-                            messages=[{"role": "user", "content": f"{custom_prompt} (Page {i+1})"}]
+                            messages=[{"role": "user", "content": prompt}]
                         )
                         text = response.choices[0].message.content.strip()
-                        pages.append((f"Page {i+1}", text))
+                        editable_text = st.text_area(f"📝 Edit {title}", text)
+                        pages.append((title, editable_text))
+                        metadata_records.append({"Title": title, "Prompt": editable_text, "Type": book_type})
                 except Exception as e:
                     pages.append((f"Page {i+1}", f"[Error] {str(e)}"))
 
@@ -183,3 +193,9 @@ if st.button("🚀 Generate Book"):
         if cover_image:
             st.subheader("🖼️ Generated Cover")
             st.image(cover_image, caption=cover_title, use_column_width=True)
+
+        # --- Export Metadata CSV ---
+        st.subheader("📄 Book Metadata")
+        metadata_df = pd.DataFrame(metadata_records)
+        st.dataframe(metadata_df)
+        st.download_button("📥 Download CSV Metadata", metadata_df.to_csv(index=False).encode(), "kdp_book_metadata.csv")
