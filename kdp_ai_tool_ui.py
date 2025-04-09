@@ -36,7 +36,7 @@ use_local_sd = st.sidebar.checkbox("🖥️ Use Local Stable Diffusion (for page
 # --- Check Local SD Availability ---
 def check_sd_connection():
     try:
-        r = requests.get("http://127.0.0.1:7861/sdapi/v1/sd-models", timeout=5)
+        r = requests.get("http://127.0.0.1:7860/sdapi/v1/sd-models", timeout=5)
         if r.status_code == 200:
             return True
     except:
