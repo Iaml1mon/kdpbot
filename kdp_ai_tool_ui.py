@@ -56,7 +56,7 @@ if book_type == "Coloring Book":
 
 def generate_with_local_sd(image, prompt):
     try:
-        api_url = "http://127.0.0.1:7860/sdapi/v1/img2img"
+        api_url = "http://127.0.0.1:7861/sdapi/v1/img2img"
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         b64_img = base64.b64encode(buffered.getvalue()).decode()
