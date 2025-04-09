@@ -1,4 +1,4 @@
-# kdp_ai_tool_ui.py (Improved tool: editable pages, preview, export, metadata)
+# kdp_ai_tool_ui.py (Improved tool with SD connection check)
 
 import streamlit as st
 import openai
@@ -33,6 +33,23 @@ generate_cover = st.sidebar.checkbox("Generate DALL·E 3 Cover", value=True)
 cover_title = st.sidebar.text_input("Cover Title", value="A Bedtime Story")
 use_local_sd = st.sidebar.checkbox("🖥️ Use Local Stable Diffusion (for pages)", value=True)
 
+# --- Check Local SD Availability ---
+def check_sd_connection():
+    try:
+        r = requests.get("http://127.0.0.1:7861/sdapi/v1/sd-models", timeout=5)
+        if r.status_code == 200:
+            return True
+    except:
+        pass
+    return False
+
+sd_available = check_sd_connection()
+if use_local_sd:
+    if sd_available:
+        st.sidebar.success("✅ Stable Diffusion API connected")
+    else:
+        st.sidebar.error("❌ Can't connect to SD at 127.0.0.1:7861")
+
 # --- Prompt Suggestions ---
 def get_prompt_template(book_type):
     if book_type == "Coloring Book":
@@ -55,7 +72,6 @@ if book_type == "Coloring Book":
     st.markdown("### 📥 Upload Coloring Pages (Optional)")
     uploaded_images = st.file_uploader("Upload coloring page images to convert to fantasy style", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
 
-# Allow preview editing
 editable_pages = []
 metadata_records = []
 
@@ -104,7 +120,7 @@ if st.button("🚀 Generate Book"):
                     if book_type == "Coloring Book" and i < len(uploaded_images):
                         uploaded_file = uploaded_images[i]
                         original_img = Image.open(uploaded_file).convert("RGB")
-                        if use_local_sd:
+                        if use_local_sd and sd_available:
                             image = generate_with_local_sd(original_img, custom_prompt)
                         else:
                             image_response = client.images.generate(
